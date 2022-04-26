@@ -25,6 +25,18 @@ app.layout = html.Div([
     dcc.Graph(id='table-editing-simple-output')
 ])
 
+def generate_table(dataframe, max_rows=100000):
+    return html.Table([
+        html.Thead(
+            html.Tr([html.Th(col) for col in dataframe.columns])
+        ),
+        html.Tbody([
+            html.Tr([
+                html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
+            ]) for i in range(min(len(dataframe), max_rows))
+        ])
+    ])
+
 
 @app.callback(
     Output('table-editing-simple-output', 'figure'),
@@ -41,7 +53,6 @@ def display_output(rows, columns):
             } for col in columns]
         }]
     }
-    print(d)
     return d
 
 

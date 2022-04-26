@@ -11,25 +11,20 @@ camper_table = pd.DataFrame()
 
 camper_table_radio_options = ['No Ticket', 'Has Ticket', 'All']
 
+init = False
 
 
-def generate_table(dataframe, max_rows=10):
-    return html.Table([
-        html.Thead(
-            html.Tr([html.Th(col) for col in dataframe.columns])
-        ),
-        html.Tbody([
-            html.Tr([
-                html.Td(dataframe.iloc[i][col]) for col in dataframe.columns
-            ]) for i in range(min(len(dataframe), max_rows))
-        ])
-    ])
-
-def init(people):
+def update(people):
     global camper_table
     
     camper_table = pd.DataFrame(people)
     camper_table.ticket = camper_table.ticket.apply(lambda x: "yes" if x else "no")
+    global init
+    if not init:
+        make_layout()
+        init = True
+
+def make_layout():
 
     app.layout = html.Div(children=[
         html.H1(children='Camp Ticket Queue'),
@@ -53,18 +48,27 @@ def init(people):
             data=camper_table.to_dict(orient="records"),
             editable=False
         ),
-        html.Div(id='data-selection')
+        html.Div(id='data-selection'),
 
+        dcc.Interval(
+            id='interval-component',
+            interval=1*1000, # in milliseconds
+            n_intervals=0
+        )
     ])
+
+
 
 # people should be something that a dataframe is assignable from, like [{}]
 @app.callback(
     Output('camper-table', 'data'),
-    Input('ticket-status', 'value'))
-def render(selection):
-    print(selection)
+    Input('ticket-status', 'value'),
+    Input('interval-component', 'n_intervals'))
+def render(selection, n_intervals):
+    global camper_table
     df = camper_table
 
+    # print(df)
     if selection == 'No Ticket':
         df = df[df.ticket=='no']
     if selection == 'Has Ticket':
@@ -75,8 +79,6 @@ def render(selection):
     df = df.sort_values('score', ascending=False)
     if 'id' in df.columns:
         df = df.drop(columns=['id'])
-
-    table = generate_table(df, max_rows=1000)
 
     return df.to_dict(orient="records")
 
